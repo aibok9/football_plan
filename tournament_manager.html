@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tournament Manager</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:linear-gradient(135deg, #fcfbf7 0%, #f5f3ed 100%);color:#1a1a18;min-height:100vh;font-size:15px;line-height:1.6}
+.app{padding:1.75rem 1.25rem;max-width:980px;margin:0 auto}
+.header{margin-bottom:1.75rem}
+.header h1{font-size:28px;font-weight:700;margin-bottom:8px;letter-spacing:-.02em}
+.header p{font-size:14px;color:#5f5d56}
+.tabs{display:flex;gap:6px;margin-bottom:1.5rem;flex-wrap:wrap}
+.tab{padding:9px 18px;border:0.5px solid #d1cec3;border-radius:12px;background:#faf7f1;cursor:pointer;font-size:14px;color:#4a4a44;transition:.15s ease;font-family:inherit}
+.tab:hover{background:#f4f1ea}
+.tab.active{background:#e8e7e1;color:#1a1a18;border-color:#a89f92;font-weight:600}
+.section{display:none}.section.active{display:block}
+h2{font-size:18px;font-weight:500;margin-bottom:1rem}
+h3{font-size:15px;font-weight:500;margin-bottom:.75rem}
+.card{background:#ffffff;border:0.5px solid #e3dfd9;border-radius:12px;padding:1rem 1.25rem;margin-bottom:1rem;box-shadow: 0 4px 12px rgba(0,0,0,0.08)}
+#sec-setup .card{background:#fffdf8;border-color:#ece7dd}
+#sec-setup{color:#1a1a18}
+#sec-setup .card h3{color:#1a1a18}
+#sec-setup .team-chip{color:#1a1a18}
+#sec-setup .team-name{color:#1a1a18}
+#sec-setup .team-num{color:#185fa5}
+#sec-setup .remove-btn{color:#7b7163}
+#sec-setup .remove-btn:hover{color:#a32d2d}
+#sec-setup .input-row input::placeholder{color:rgba(26,26,24,0.55)}
+.team-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-bottom:1rem}
+.team-chip{display:flex;align-items:center;gap:8px;background:#fffaf4;border:0.5px solid #dcd7ca;border-radius:8px;padding:6px 10px;font-size:13px}
+.team-num{width:20px;height:20px;border-radius:50%;background:#dfeffc;color:#185fa5;font-size:11px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.team-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.remove-btn{background:none;border:none;cursor:pointer;color:#b4b2a9;font-size:16px;line-height:1;padding:0 2px}
+.remove-btn:hover{color:#a32d2d}
+.input-row{display:flex;gap:8px;margin-bottom:1rem}
+.input-row input{flex:1;padding:10px 14px;border:0.5px solid #b8b3a7;border-radius:10px;background:#fff;color:#1a1a18;font-size:15px;font-family:inherit}
+.input-row input:focus{outline:none;border-color:#8c856f;box-shadow:0 0 0 3px rgba(141,132,113,0.12)}
+.btn{padding:10px 18px;border:0.5px solid #b8b3a7;border-radius:10px;background:#fff;cursor:pointer;font-size:14px;font-weight:600;color:#1a1a18;transition:.15s ease}
+.btn:hover{background:#f7f3ec}
+.btn.primary{background:#1a1a18;color:#fff;border-color:#1a1a18;box-shadow:0 4px 12px rgba(26,26,24,0.12)}
+.btn.primary:hover{opacity:.92;transform:translateY(-1px)}
+.btn:disabled{opacity:.5;cursor:not-allowed;background:#f3f1ed;border-color:#d6d1c6;color:#7a756a}
+@media (max-width: 768px) {
+  .app{padding:1rem}
+  .tabs{flex-direction:column;gap:10px}
+  .tab{width:100%;text-align:center}
+  .input-row{flex-direction:column}
+  .input-row input{width:100%}
+  .wheel-wrap{max-width:100%}
+  .wheel-btn-row{flex-direction:column;align-items:stretch}
+  .wheel-btn-row .btn{width:100%}
+  .metrics{grid-template-columns:1fr}
+  .groups-grid{grid-template-columns:1fr}
+  .group-header,.group-team,.fixture,.bracket-match{font-size:13px}
+  .fixture{flex-direction:column;align-items:flex-start}
+  .fixture-teams{flex-direction:column;align-items:flex-start;gap:8px}
+  .team-label.right{text-align:left}
+  .score-input{width:100%;max-width:100%}
+  .bracket{flex-direction:column;min-width:auto}
+  .bracket-round{min-width:auto;border-right:none}
+  .bracket-round-title{padding:.75rem 0}
+}
+@media (max-width: 520px) {
+  body{font-size:14px}
+  h3{font-size:16px}
+  .tab{padding:10px 14px;font-size:13px}
+  .btn{padding:10px 14px;font-size:14px}
+  .team-chip{padding:8px 10px;font-size:12px}
+  .metric{padding:0.9rem}
+  .draw-result{font-size:13px}
+  .modal-content{padding:1rem 1.1rem;max-width:92%}
+} 
+.info-box{background:#eef7ff;border:0.5px solid #c8ddf0;border-radius:10px;padding:1rem 1.1rem;font-size:14px;color:#16456c;margin-bottom:1rem}
+.warning-box{background:#fff4df;border:0.5px solid #e6c687;border-radius:10px;padding:1rem 1.1rem;font-size:14px;color:#7d541b;margin-bottom:1rem}
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:1rem}
+.metric{background:#fff9f2;border-radius:10px;padding:1.1rem}
+.metric-label{color:#5f5c52;margin-bottom:6px;font-size:13px}
+.metric-value{font-size:24px;font-weight:700}
+#wheel-canvas{display:block;margin:0 auto;border-radius:50%;box-shadow: 0 4px 16px rgba(0,0,0,0.1)}
+.wheel-wrap{text-align:center;margin-bottom:1rem}
+.wheel-btn-row{display:flex;justify-content:center;gap:8px;margin-top:1rem;flex-wrap:wrap}
+.groups-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem;margin-top:1rem}
+.group-card{background:#fff;border:0.5px solid #d3d1c7;border-radius:12px;overflow:hidden}
+.group-header{padding:.5rem 1rem;font-size:13px;font-weight:500;border-bottom:0.5px solid #d3d1c7}
+.group-team{padding:.4rem 1rem;font-size:13px;border-bottom:0.5px solid #eee;display:flex;align-items:center;gap:8px}
+.group-team:last-child{border-bottom:none}
+.fixture-list{display:flex;flex-direction:column;gap:6px;margin-bottom:1rem}
+.fixture{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#fff;border:0.5px solid #d3d1c7;border-radius:8px;font-size:13px}
+.fixture-teams{flex:1;display:flex;align-items:center;gap:6px}
+.team-label{flex:1;font-weight:500}
+.team-label.right{text-align:right}
+.vs{color:#b4b2a9;font-size:11px;font-weight:500}
+.score-input{width:36px;padding:4px;border:0.5px solid #c5c4bc;border-radius:4px;text-align:center;font-size:13px;font-family:inherit;background:#fff;color:#1a1a18}
+.standings-table{width:100%;border-collapse:collapse;font-size:13px}
+.standings-table th{text-align:left;padding:6px 8px;font-weight:500;font-size:11px;color:#6b6a64;border-bottom:0.5px solid #d3d1c7;text-transform:uppercase;letter-spacing:.04em}
+.standings-table td{padding:7px 8px;border-bottom:0.5px solid #eee;color:#1a1a18}
+.standings-table tr:last-child td{border-bottom:none}
+.pos{font-weight:500;color:#6b6a64;width:24px}
+.qualified{color:#3b6d11;font-weight:500}
+.adv-dot{width:6px;height:6px;border-radius:50%;background:#639922;display:inline-block;margin-right:4px}
+.bracket-wrap{overflow-x:auto;padding-bottom:1rem}
+.bracket{display:flex;align-items:stretch;min-width:600px;gap:0}
+.bracket-round{display:flex;flex-direction:column;flex:1;min-width:140px;border-right:0.5px solid #eee}
+.bracket-round:last-child{border-right:none}
+.bracket-round-title{font-size:11px;font-weight:500;color:#6b6a64;text-align:center;padding:.5rem;border-bottom:0.5px solid #d3d1c7;text-transform:uppercase;letter-spacing:.04em}
+.bracket-matches{display:flex;flex-direction:column;justify-content:space-around;flex:1;gap:8px;padding:8px}
+.bracket-match{background:#fff;border:0.5px solid #d3d1c7;border-radius:8px;overflow:hidden}
+.bracket-team{padding:5px 8px;font-size:12px;border-bottom:0.5px solid #eee;display:flex;align-items:center;justify-content:space-between}
+.bracket-team:last-child{border-bottom:none}
+.bracket-team.winner{background:#eaf3de;color:#3b6d11;font-weight:500}
+.bracket-team.tbd{color:#b4b2a9}
+.bracket-score{font-size:11px;font-weight:500;color:#6b6a64;min-width:16px;text-align:right}
+.winner-banner{text-align:center;padding:2rem;background:#eaf3de;border:0.5px solid #c0dd97;border-radius:12px;margin-bottom:1rem}
+.trophy{font-size:48px;margin-bottom:.5rem}
+.winner-name{font-size:24px;font-weight:500;color:#3b6d11}
+.draw-result{text-align:center;font-size:14px;font-weight:500;color:#3b6d11;margin-top:1rem;min-height:24px}
+.modal-backdrop{position:fixed;inset:0;background:rgba(26,26,24,0.72);display:flex;align-items:center;justify-content:center;z-index:10;padding:16px}
+.modal-content{background:#fff;border-radius:16px;padding:1.25rem 1.5rem;max-width:360px;width:100%;box-shadow:0 16px 40px rgba(0,0,0,0.18);text-align:center}
+.modal-title{font-size:17px;font-weight:600;margin-bottom:0.75rem;color:#1a1a18}
+.modal-message{font-size:14px;color:#38352f;margin-bottom:1.25rem}
+.modal-actions{display:flex;justify-content:center}
+@media(prefers-color-scheme:dark){
+  body{background:#232323;color:#f1f1ee}
+  .card,.bracket-match,.fixture,.group-card{background:#2f2f2d;border-color:#4b4a48}
+  .tab.active,.team-chip,.metric{background:#41413f}
+  .tab{border-color:#4b4a48;color:#bdbbb4}
+  .input-row input,.score-input{background:#343432;color:#f5f5f0;border-color:#4b4a48}
+  .standings-table td,.bracket-team,.group-team{border-bottom-color:#4b4a48}
+  .standings-table th{border-bottom-color:#4b4a48}
+  .btn.primary{background:#f5f5f0;color:#1a1a18;border-color:#f5f5f0}
+  .group-header{border-bottom-color:#4b4a48}
+  .winner-banner{background:#2f4412;border-color:#4b6c1a}
+  .winner-name{color:#d6e8a9}
+  .teams-remaining,.draw-result{color:#b0f0cf}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>⚽ Tournament Manager</h1>
+    <p>Football fixture planner with group draw wheel &amp; knockout bracket</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('setup')">⚙️ Setup</button>
+    <button class="tab" onclick="showTab('draw')">🎡 Draw</button>
+    <button class="tab" onclick="showTab('groups')">🏆 Groups</button>
+    <button class="tab" onclick="showTab('knockout')">🏅 Knockout</button>
+  </div>
+
+  <!-- SETUP -->
+  <div class="section active" id="sec-setup">
+    <div class="card">
+      <h3>Register teams</h3>
+      <div class="input-row">
+        <input id="team-input" placeholder="Enter team name..." onkeydown="if(event.key==='Enter')addTeam()">
+        <button class="btn primary" onclick="addTeam()">Add team</button>
+      </div>
+      <div class="input-row" style="gap:6px;flex-wrap:wrap">
+        <button class="btn" onclick="addSampleTeams()" style="font-size:12px">Load 16 sample teams</button>
+        <button class="btn" onclick="clearTeams()" style="font-size:12px;color:#a32d2d">Clear all</button>
+      </div>
+      <div id="team-grid" class="team-grid"></div>
+    </div>
+    <div class="card">
+      <h3>Tournament format</h3>
+      <div class="metrics">
+        <div class="metric"><div class="metric-label">Teams registered</div><div class="metric-value" id="team-count">0</div></div>
+        <div class="metric"><div class="metric-label">Number of groups</div><div class="metric-value" id="group-count">—</div></div>
+        <div class="metric"><div class="metric-label">Teams per group</div><div class="metric-value" id="teams-per-group">—</div></div>
+        <div class="metric"><div class="metric-label">Knockout stage</div><div class="metric-value" id="knockout-from">—</div></div>
+      </div>
+      <div id="format-info"></div>
+      <button class="btn primary" id="start-btn" onclick="startTournament()" disabled>Start tournament →</button>
+    </div>
+  </div>
+
+  <!-- DRAW -->
+  <div class="section" id="sec-draw">
+    <div class="card">
+      <h3>Group draw wheel</h3>
+      <p style="font-size:13px;color:#6b6a64;margin-bottom:1rem">Teams remaining: <strong id="teams-remaining">0</strong> — spin to draw a team into the next group</p>
+      <div class="wheel-wrap">
+        <canvas id="wheel-canvas" width="320" height="320"></canvas>
+      </div>
+      <div class="wheel-btn-row">
+        <button class="btn primary" id="spin-btn" onclick="spinWheel()">🎡 Spin wheel</button>
+        <button class="btn" onclick="skipDraw()">Auto-draw all remaining</button>
+      </div>
+      <div class="draw-result" id="draw-result"></div>
+      <div id="draw-modal" class="modal-backdrop" style="display:none">
+        <div class="modal-content">
+          <div class="modal-title">Team Drawn</div>
+          <div class="modal-message" id="draw-modal-message"></div>
+          <div class="modal-actions">
+            <button class="btn primary" onclick="confirmDraw()">OK</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="groups-grid" id="draw-groups"></div>
+  </div>
+
+  <!-- GROUPS -->
+  <div class="section" id="sec-groups">
+    <div id="groups-fixtures"></div>
+    <div style="text-align:right;margin-top:.5rem">
+      <button class="btn primary" onclick="advanceToKnockout()">Generate knockout stage →</button>
+    </div>
+  </div>
+
+  <!-- KNOCKOUT -->
+  <div class="section" id="sec-knockout">
+    <div id="winner-display"></div>
+    <div class="bracket-wrap">
+      <div class="bracket" id="bracket"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+let teams=[], groups=[], groupFixtures=[], knockoutRounds=[], drawPool=[], drawGroups=[], currentGroupIdx=0;
+const COLORS=['#534AB7','#0F6E56','#993C1D','#185FA5','#993556','#3B6D11','#854F0B','#A32D2D','#444441','#0F6E56'];
+const FILLS=['#EEEDFE','#E1F5EE','#FAECE7','#E6F1FB','#FBEAF0','#EAF3DE','#FAEEDA','#FCEBEB','#F1EFE8','#E1F5EE'];
+const SAMPLE=['Arsenal','Barcelona','Bayern Munich','Chelsea','Dortmund','Inter Milan','Juventus','Liverpool','Man City','PSG','Real Madrid','Ajax','Atletico Madrid','Porto','Napoli','Benfica'];
+
+function showTab(id){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sec-'+id).classList.add('active');
+  const tabs=['setup','draw','groups','knockout'];
+  const idx=tabs.indexOf(id);
+  document.querySelectorAll('.tab')[idx].classList.add('active');
+}
+
+function addTeam(){
+  const inp=document.getElementById('team-input');
+  const n=inp.value.trim();
+  if(!n||teams.includes(n))return;
+  if(teams.length>=32){alert('Maximum 32 teams');return;}
+  teams.push(n);inp.value='';renderTeams();
+}
+function addSampleTeams(){
+  SAMPLE.forEach(t=>{if(!teams.includes(t)&&teams.length<32)teams.push(t)});
+  renderTeams();
+}
+function clearTeams(){teams=[];renderTeams();}
+function removeTeam(i){teams.splice(i,1);renderTeams();}
+
+function getFormat(n){
+  if(n<4||n>32)return null;
+  if(n<=4)return{groups:1,tpg:n,knockoutSize:2,desc:`${n} teams · 1 group · top 2 advance to the final.`};
+  if(n<=8)return{groups:2,tpg:Math.ceil(n/2),knockoutSize:4,desc:`${n} teams · 2 groups · top 2 from each advance to semi-finals.`};
+  if(n<=12)return{groups:3,tpg:Math.ceil(n/3),knockoutSize:8,desc:`${n} teams · 3 groups · group winners + 5 best runners-up advance to quarter-finals.`};
+  if(n<=16)return{groups:4,tpg:Math.ceil(n/4),knockoutSize:8,desc:`${n} teams · 4 groups · top 2 from each group advance to quarter-finals.`};
+  if(n<=24)return{groups:6,tpg:Math.ceil(n/6),knockoutSize:16,desc:`${n} teams · 6 groups · top 2 + 4 best runners-up advance to Round of 16.`};
+  return{groups:8,tpg:Math.ceil(n/8),knockoutSize:16,desc:`${n} teams · 8 groups · top 2 from each group advance to Round of 16.`};
+}
+
+function renderTeams(){
+  const g=document.getElementById('team-grid');
+  g.innerHTML=teams.map((t,i)=>`<div class="team-chip"><span class="team-num">${i+1}</span><span class="team-name">${t}</span><button class="remove-btn" onclick="removeTeam(${i})" title="Remove">×</button></div>`).join('');
+  document.getElementById('team-count').textContent=teams.length;
+  const fmt=getFormat(teams.length);
+  if(fmt){
+    document.getElementById('group-count').textContent=fmt.groups;
+    document.getElementById('teams-per-group').textContent=fmt.tpg;
+    document.getElementById('knockout-from').textContent='Top '+fmt.knockoutSize;
+    document.getElementById('format-info').innerHTML=`<div class="info-box" style="margin-bottom:1rem">${fmt.desc}</div>`;
+    document.getElementById('start-btn').disabled=false;
+  } else {
+    document.getElementById('group-count').textContent='—';
+    document.getElementById('teams-per-group').textContent='—';
+    document.getElementById('knockout-from').textContent='—';
+    document.getElementById('start-btn').disabled=true;
+    document.getElementById('format-info').innerHTML=teams.length>0?`<div class="warning-box" style="margin-bottom:1rem">${teams.length<4?'Need at least 4 teams.':'Maximum 32 teams.'}</div>`:'';
+  }
+}
+
+function startTournament(){
+  const fmt=getFormat(teams.length);if(!fmt)return;
+  drawGroups=Array.from({length:fmt.groups},(_,i)=>({name:'Group '+String.fromCharCode(65+i),teams:[]}));
+  groups=[];groupFixtures=[];knockoutRounds=[];
+  drawPool=[...teams].sort(()=>Math.random()-.5);
+  currentGroupIdx=0;
+  document.getElementById('teams-remaining').textContent=drawPool.length;
+  renderDrawGroups();
+  initWheel();
+  showTab('draw');
+}
+
+// --- WHEEL ---
+let spinning=false,angle=0,spinVel=0,rafId=null;
+function initWheel(){drawWheelCanvas();}
+function drawWheelCanvas(){
+  const c=document.getElementById('wheel-canvas');
+  const ctx=c.getContext('2d');
+  const W=c.width,H=c.height,cx=W/2,cy=H/2,r=cx-20;
+  ctx.clearRect(0,0,W,H);
+  if(!drawPool.length){
+    ctx.fillStyle='#6b6a64';ctx.font='14px system-ui,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('All teams drawn!',cx,cy);return;
+  }
+  const n=drawPool.length,arc=2*Math.PI/n;
+  for(let i=0;i<n;i++){
+    const a=angle+i*arc;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,a,a+arc);ctx.closePath();
+    ctx.fillStyle=FILLS[i%FILLS.length];ctx.fill();
+    ctx.strokeStyle='rgba(0,0,0,.1)';ctx.lineWidth=1;ctx.stroke();
+    ctx.save();ctx.translate(cx,cy);ctx.rotate(a+arc/2);
+    ctx.font='500 12px system-ui,sans-serif';ctx.fillStyle=COLORS[i%COLORS.length];ctx.textAlign='right';ctx.textBaseline='middle';
+    let name=drawPool[i];
+    while(ctx.measureText(name).width>r-30&&name.length>3)name=name.slice(0,-1)+'…';
+    ctx.fillText(name,r-10,0);
+    ctx.restore();
+  }
+  // Centre
+  ctx.beginPath();ctx.arc(cx,cy,20,0,2*Math.PI);ctx.fillStyle='#fff';ctx.fill();
+  ctx.strokeStyle='#d3d1c7';ctx.lineWidth=1;ctx.stroke();
+  ctx.fillStyle='#1a1a18';ctx.font='16px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('⚽',cx,cy);
+  // Pointer (right side)
+  ctx.beginPath();ctx.moveTo(W-6,cy-9);ctx.lineTo(W-6,cy+9);ctx.lineTo(W-26,cy);ctx.closePath();ctx.fillStyle='#E24B4A';ctx.fill();
+}
+function spinWheel(){
+  if(spinning||!drawPool.length)return;
+  spinning=true;document.getElementById('spin-btn').disabled=true;document.getElementById('draw-result').textContent='';
+  spinVel=0.12+Math.random()*0.18;
+  rafId=requestAnimationFrame(animSpin);
+}
+function animSpin(){
+  angle-=spinVel;spinVel*=0.992;
+  drawWheelCanvas();
+  if(spinVel>0.003)rafId=requestAnimationFrame(animSpin);
+  else{spinning=false;landWheel();}
+}
+function landWheel(){
+  const n=drawPool.length,arc=2*Math.PI/n;
+  const norm=((-angle)%(2*Math.PI)+2*Math.PI)%(2*Math.PI);
+  const idx=Math.floor(norm/arc)%n;
+  assignTeam(drawPool[idx]);
+}
+function assignTeam(team){
+  drawPool.splice(drawPool.indexOf(team),1);
+  const gi=currentGroupIdx%drawGroups.length;
+  drawGroups[gi].teams.push(team);
+  currentGroupIdx++;
+  document.getElementById('teams-remaining').textContent=drawPool.length;
+  document.getElementById('draw-result').textContent=`"${team}" drawn into ${drawGroups[gi].name}!`;
+  renderDrawGroups();drawWheelCanvas();
+  showDrawModal(`"${team}" drawn into ${drawGroups[gi].name}!`);
+}
+function showDrawModal(message){
+  document.getElementById('draw-modal-message').textContent=message;
+  document.getElementById('draw-modal').style.display='flex';
+}
+function confirmDraw(){
+  document.getElementById('draw-modal').style.display='none';
+  if(!drawPool.length)finalizeDraw();
+  else document.getElementById('spin-btn').disabled=false;
+}
+function skipDraw(){
+  while(drawPool.length){
+    const team=drawPool[0];
+    const gi=currentGroupIdx%drawGroups.length;
+    drawGroups[gi].teams.push(team);
+    drawPool.splice(0,1);currentGroupIdx++;
+  }
+  document.getElementById('teams-remaining').textContent=0;
+  renderDrawGroups();drawWheelCanvas();finalizeDraw();
+}
+function finalizeDraw(){
+  groups=drawGroups.map(g=>{
+    const pts={},gf={},ga={},w={},d={},l={};
+    g.teams.forEach(t=>{pts[t]=0;gf[t]=0;ga[t]=0;w[t]=0;d[t]=0;l[t]=0;});
+    return{...g,pts,gf,ga,w,d,l};
+  });
+  generateGroupFixtures();
+  document.getElementById('spin-btn').disabled=true;
+  document.getElementById('draw-result').textContent='Draw complete! Advancing to Groups…';
+  setTimeout(()=>showTab('groups'),1000);
+}
+function renderDrawGroups(){
+  document.getElementById('draw-groups').innerHTML=drawGroups.map((g,gi)=>`
+    <div class="group-card">
+      <div class="group-header" style="color:${COLORS[gi%COLORS.length]}">${g.name}</div>
+      ${g.teams.length?g.teams.map(t=>`<div class="group-team"><span style="width:7px;height:7px;border-radius:50%;background:${COLORS[gi%COLORS.length]};display:inline-block;flex-shrink:0"></span>${t}</div>`).join(''):'<div class="group-team" style="color:#b4b2a9;font-style:italic">No teams yet</div>'}
+    </div>`).join('');
+}
+
+// --- GROUP FIXTURES ---
+function generateGroupFixtures(){
+  groupFixtures=[];
+  groups.forEach((g,gi)=>{
+    const matches=[];
+    for(let a=0;a<g.teams.length;a++)
+      for(let b=a+1;b<g.teams.length;b++)
+        matches.push({id:`g${gi}m${a}v${b}`,gi,home:g.teams[a],away:g.teams[b],homeScore:'',awayScore:'',played:false});
+    groupFixtures.push(matches);
+  });
+  renderGroupsTab();
+}
+function renderGroupsTab(){
+  document.getElementById('groups-fixtures').innerHTML=groups.map((g,gi)=>`
+    <div class="card">
+      <h3 style="color:${COLORS[gi%COLORS.length]};border-bottom:2px solid ${FILLS[gi%FILLS.length]};padding-bottom:.5rem;margin-bottom:.75rem">${g.name}</h3>
+      <div class="fixture-list">
+        ${groupFixtures[gi].map(m=>`
+          <div class="fixture">
+            <div class="fixture-teams">
+              <span class="team-label">${m.home}</span>
+              <input class="score-input" type="number" min="0" value="${m.homeScore}" id="h-${m.id}" oninput="updateScore('${m.id}',${gi})">
+              <span class="vs">VS</span>
+              <input class="score-input" type="number" min="0" value="${m.awayScore}" id="a-${m.id}" oninput="updateScore('${m.id}',${gi})">
+              <span class="team-label right">${m.away}</span>
+            </div>
+          </div>`).join('')}
+      </div>
+      <table class="standings-table" style="margin-top:.75rem">
+        <thead><tr><th>#</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>GD</th><th>Pts</th></tr></thead>
+        <tbody id="table-${gi}"></tbody>
+      </table>
+      <p style="font-size:11px;color:#6b6a64;margin-top:.5rem">● = qualifies to knockout stage</p>
+    </div>`).join('');
+  groups.forEach((_,gi)=>renderStandings(gi));
+}
+function updateScore(id,gi){
+  const mi=groupFixtures[gi].findIndex(m=>m.id===id);
+  const m=groupFixtures[gi][mi];
+  const h=parseInt(document.getElementById('h-'+id).value);
+  const a=parseInt(document.getElementById('a-'+id).value);
+  if(!isNaN(h)&&h>=0&&!isNaN(a)&&a>=0){m.homeScore=h;m.awayScore=a;m.played=true;}
+  else m.played=false;
+  recalcGroup(gi);renderStandings(gi);
+}
+function recalcGroup(gi){
+  const g=groups[gi];
+  g.teams.forEach(t=>{g.pts[t]=0;g.gf[t]=0;g.ga[t]=0;g.w[t]=0;g.d[t]=0;g.l[t]=0;});
+  groupFixtures[gi].forEach(m=>{
+    if(!m.played)return;
+    const h=+m.homeScore,a=+m.awayScore;
+    g.gf[m.home]+=h;g.ga[m.home]+=a;g.gf[m.away]+=a;g.ga[m.away]+=h;
+    if(h>a){g.pts[m.home]+=3;g.w[m.home]++;g.l[m.away]++;}
+    else if(a>h){g.pts[m.away]+=3;g.w[m.away]++;g.l[m.home]++;}
+    else{g.pts[m.home]++;g.pts[m.away]++;g.d[m.home]++;g.d[m.away]++;}
+  });
+}
+function getStandings(gi){
+  const g=groups[gi];
+  return[...g.teams].sort((a,b)=>{
+    if(g.pts[b]!==g.pts[a])return g.pts[b]-g.pts[a];
+    const gdB=(g.gf[b]-g.ga[b]),gdA=(g.gf[a]-g.ga[a]);
+    if(gdB!==gdA)return gdB-gdA;
+    return g.gf[b]-g.gf[a];
+  });
+}
+function renderStandings(gi){
+  const tbody=document.getElementById('table-'+gi);if(!tbody)return;
+  const g=groups[gi],sorted=getStandings(gi);
+  tbody.innerHTML=sorted.map((t,i)=>`
+    <tr>
+      <td class="pos">${i+1}</td>
+      <td>${i<2?`<span class="adv-dot"></span><span class="qualified">${t}</span>`:t}</td>
+      <td>${(g.w[t]||0)+(g.d[t]||0)+(g.l[t]||0)}</td>
+      <td>${g.w[t]||0}</td><td>${g.d[t]||0}</td><td>${g.l[t]||0}</td>
+      <td>${g.gf[t]||0}</td><td>${g.ga[t]||0}</td>
+      <td>${(g.gf[t]||0)-(g.ga[t]||0)}</td>
+      <td><strong>${g.pts[t]||0}</strong></td>
+    </tr>`).join('');
+}
+
+// --- KNOCKOUT ---
+function advanceToKnockout(){
+  let advancers=[];
+  groups.forEach((g,gi)=>{advancers.push(...getStandings(gi).slice(0,2));});
+  advancers=advancers.sort(()=>Math.random()-.5);
+  let current=advancers;
+  let size=1;while(size<current.length)size*=2;
+  while(current.length<size)current.push('BYE');
+  knockoutRounds=[];
+  const roundNames={2:'Final',4:'Semi-finals',8:'Quarter-finals',16:'Round of 16',32:'Round of 32'};
+  while(current.length>=2){
+    const matches=[];
+    for(let i=0;i<current.length;i+=2){
+      const m={home:current[i],away:current[i+1],homeScore:'',awayScore:'',winner:null,played:false};
+      if(m.away==='BYE'){m.winner=m.home;m.played=true;}
+      else if(m.home==='BYE'){m.winner=m.away;m.played=true;}
+      matches.push(m);
+    }
+    knockoutRounds.push({name:roundNames[current.length]||`Round of ${current.length}`,matches});
+    current=matches.map(m=>m.winner||'TBD');
+    if(current.length===1)break;
+  }
+  showTab('knockout');renderKnockout();
+}
+function renderKnockout(){
+  const last=knockoutRounds[knockoutRounds.length-1];
+  const winner=last&&last.matches[0].winner&&last.matches[0].winner!=='TBD'?last.matches[0].winner:null;
+  document.getElementById('winner-display').innerHTML=winner?`<div class="winner-banner"><div class="trophy">🏆</div><div style="font-size:13px;color:#3b6d11;margin-bottom:4px">Tournament Winner</div><div class="winner-name">${winner}</div></div>`:'';
+  document.getElementById('bracket').innerHTML=knockoutRounds.map((r,ri)=>`
+    <div class="bracket-round">
+      <div class="bracket-round-title">${r.name}</div>
+      <div class="bracket-matches">
+        ${r.matches.map((m,mi)=>`
+          <div class="bracket-match">
+            <div class="bracket-team ${m.winner===m.home?'winner':''} ${m.home==='TBD'||m.home==='BYE'?'tbd':''}">
+              <span>${m.home==='BYE'?'–':m.home}</span>
+              <span class="bracket-score">${m.played&&m.home!=='BYE'&&m.home!=='TBD'?m.homeScore:''}</span>
+            </div>
+            <div class="bracket-team ${m.winner===m.away?'winner':''} ${m.away==='TBD'||m.away==='BYE'?'tbd':''}">
+              <span>${m.away==='BYE'?'–':m.away}</span>
+              <span class="bracket-score">${m.played&&m.away!=='BYE'&&m.away!=='TBD'?m.awayScore:''}</span>
+            </div>
+            ${!m.played&&m.home!=='BYE'&&m.away!=='BYE'&&m.home!=='TBD'&&m.away!=='TBD'?`
+            <div style="display:flex;gap:4px;padding:5px 8px;border-top:0.5px solid #eee;align-items:center">
+              <input class="score-input" type="number" min="0" id="kh-${ri}-${mi}" placeholder="0" style="width:30px" oninput="updateKO(${ri},${mi})">
+              <span style="font-size:10px;color:#b4b2a9">–</span>
+              <input class="score-input" type="number" min="0" id="ka-${ri}-${mi}" placeholder="0" style="width:30px" oninput="updateKO(${ri},${mi})">
+            </div>`:''}
+          </div>`).join('')}
+      </div>
+    </div>`).join('');
+}
+function updateKO(ri,mi){
+  const m=knockoutRounds[ri].matches[mi];
+  const h=parseInt(document.getElementById('kh-'+ri+'-'+mi).value);
+  const a=parseInt(document.getElementById('ka-'+ri+'-'+mi).value);
+  if(!isNaN(h)&&!isNaN(a)&&h!==a){
+    m.homeScore=h;m.awayScore=a;m.played=true;m.winner=h>a?m.home:m.away;
+    if(ri+1<knockoutRounds.length){
+      const nm=knockoutRounds[ri+1].matches[Math.floor(mi/2)];
+      if(mi%2===0)nm.home=m.winner;else nm.away=m.winner;
+      nm.winner=null;nm.played=false;nm.homeScore='';nm.awayScore='';
+      for(let r2=ri+2;r2<knockoutRounds.length;r2++)
+        knockoutRounds[r2].matches.forEach(x=>{x.winner=null;x.played=false;x.homeScore='';x.awayScore='';if(x.home!=='BYE')x.home='TBD';if(x.away!=='BYE')x.away='TBD';});
+    }
+    renderKnockout();
+  }
+}
+renderTeams();
+</script>
+</body>
+</html>
